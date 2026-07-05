@@ -57,7 +57,32 @@ def explore_dataset(directory: Path = RAW_DATA_DIR) -> None:
         print()
 
     print(f"✅ Total: {len(files)} trajets, {total_rows} mesures cumulées")
+def inspect_columns(file_name: str, directory: Path = RAW_DATA_DIR) -> None:
+    """Affiche le détail des colonnes, types et premières lignes d'un fichier précis."""
+    file_path = directory / file_name
+    df = pd.read_csv(file_path)
 
+    print(f"📄 Fichier: {file_name}\n")
+    print("— Colonnes et types —")
+    print(df.dtypes)
+    print()
+
+    print("— Aperçu (5 premières lignes) —")
+    print(df.head())
+    print()
+
+    print("— Statistiques descriptives —")
+    print(df.describe())
+    print()
+
+    print("— Valeurs manquantes par colonne —")
+    print(df.isnull().sum())
 
 if __name__ == "__main__":
     explore_dataset()
+
+    print("\n" + "=" * 60)
+    print("INSPECTION DÉTAILLÉE D'UN FICHIER")
+    print("=" * 60 + "\n")
+
+    inspect_columns("2017-07-05_Seat_Leon_RT_S_Stau.csv")
