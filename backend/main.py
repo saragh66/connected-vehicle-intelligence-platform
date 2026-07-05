@@ -1,3 +1,4 @@
+from backend.api.routes import vehicles
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["Health"])
     def health_check():
         return {"status": "healthy"}
+    app.include_router(vehicles.router, prefix=settings.API_PREFIX)
 
     return app
 
