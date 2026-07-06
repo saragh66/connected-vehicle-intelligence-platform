@@ -18,3 +18,10 @@ class VehicleRepository:
         self.db.commit()
         self.db.refresh(vehicle)
         return vehicle
+
+    def get_or_create(self, vehicle_code: str) -> Vehicle:
+        """Récupère un véhicule existant par son code, ou le crée s'il n'existe pas."""
+        vehicle = self.db.query(Vehicle).filter(Vehicle.vehicle_code == vehicle_code).first()
+        if vehicle:
+            return vehicle
+        return self.create(vehicle_code=vehicle_code)
