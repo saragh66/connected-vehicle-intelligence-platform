@@ -1,4 +1,3 @@
-from backend.api.routes import vehicles
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +6,7 @@ import logging
 
 from backend.config.settings import get_settings
 from backend.config.logging import configure_logging
+from backend.api.routes import vehicles, telemetry
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -58,7 +58,9 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["Health"])
     def health_check():
         return {"status": "healthy"}
+
     app.include_router(vehicles.router, prefix=settings.API_PREFIX)
+    app.include_router(telemetry.router, prefix=settings.API_PREFIX)
 
     return app
 
