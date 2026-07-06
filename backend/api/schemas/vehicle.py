@@ -15,3 +15,7 @@ class VehicleResponse(BaseModel):
 class VehicleCreate(BaseModel):
     vehicle_code: str
     model: str | None = None
+
+
+class VehicleDetail(VehicleResponse):
+    total_records: int
