@@ -17,15 +17,15 @@ def create_producer() -> KafkaProducer:
     return KafkaProducer(
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         value_serializer=json_serializer,
-        linger_ms=20,       # regroupe les messages en petits paquets avant envoi (plus rapide)
-        batch_size=32768,   # taille de batch en bytes
+        linger_ms=20,
+        batch_size=32768,
     )
 
 
 def stream_file(producer: KafkaProducer, file_path, delay: float = 0.0) -> int:
     """Envoie toutes les lignes d'un fichier CSV vers Kafka, une par une."""
     df = parse_file(file_path)
-    records = df.to_dict(orient="records")  # beaucoup plus rapide que iterrows()
+    records = df.to_dict(orient="records")
     count = 0
     total = len(records)
 
@@ -68,5 +68,5 @@ def stream_all_files(delay: float = 0.0, limit_files: int | None = None):
 
 
 if __name__ == "__main__":
-    # Test rapide : 1 seul fichier, sans délai, pour valider la connexion Kafka
-    stream_all_files(delay=0, limit_files=1)
+    # Pipeline complet : tous les 81 fichiers, sans délai (rapide)
+    stream_all_files(delay=0, limit_files=None)

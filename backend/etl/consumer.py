@@ -26,6 +26,7 @@ def create_consumer(group_id: str = "telemetry-etl-group") -> KafkaConsumer:
         auto_offset_reset="earliest",
         enable_auto_commit=True,
         group_id=group_id,
+        consumer_timeout_ms=15000,  # s'arrête automatiquement après 15s sans nouveau message
     )
 
 
@@ -37,7 +38,6 @@ def run_etl(limit: int | None = None):
     vehicle_repo = VehicleRepository(db)
     telemetry_repo = TelemetryRepository(db)
 
-    # Cache des vehicle_id déjà résolus, pour éviter une requête DB à chaque message
     vehicle_cache: dict[str, int] = {}
 
     batch: list[dict] = []
@@ -68,7 +68,6 @@ def run_etl(limit: int | None = None):
 
             transformed = transform_record(cleaned)
 
-            # Sécurité : un batch ne mélange qu'un seul vehicle_id à la fois
             if batch_vehicle_id is not None and batch_vehicle_id != vehicle_id:
                 inserted = telemetry_repo.bulk_insert(batch, batch_vehicle_id)
                 total_inserted += inserted
@@ -82,12 +81,11 @@ def run_etl(limit: int | None = None):
                 inserted = telemetry_repo.bulk_insert(batch, batch_vehicle_id)
                 total_inserted += inserted
                 batch = []
-                print(f"   ... {total_inserted} lignes insérées ({total_rejected} rejetées)")
+                print(f"   ... {total_processed} traités | {total_inserted} insérés | {total_rejected} rejetés")
 
             if limit and total_processed >= limit:
                 break
 
-        # Insérer le reste du batch
         if batch:
             inserted = telemetry_repo.bulk_insert(batch, batch_vehicle_id)
             total_inserted += inserted
@@ -103,5 +101,5 @@ def run_etl(limit: int | None = None):
 
 
 if __name__ == "__main__":
-    # Test rapide : traite seulement les 2000 premiers messages
-    run_etl(limit=2000)
+    # Traitement complet : tout le topic. S'arrête automatiquement après 15s d'inactivité.
+    run_etl(limit=None)
