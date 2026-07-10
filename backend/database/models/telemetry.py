@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.sql import func
 from backend.database.connection import Base
 
@@ -20,5 +20,10 @@ class Telemetry(Base):
     ambient_air_temp = Column(Float, nullable=True)
     accelerator_pedal_d = Column(Float, nullable=True)
     accelerator_pedal_e = Column(Float, nullable=True)
+
+    # Champs ML — Anomaly Detection
+    anomaly_score = Column(Float, nullable=True, index=True)
+    is_anomaly = Column(Boolean, nullable=True, index=True)
+    model_version = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
