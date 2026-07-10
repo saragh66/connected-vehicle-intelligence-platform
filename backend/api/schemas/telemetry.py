@@ -16,6 +16,8 @@ class TelemetryResponse(BaseModel):
     ambient_air_temp: float | None
     accelerator_pedal_d: float | None
     accelerator_pedal_e: float | None
+    anomaly_score: float | None = None
+    is_anomaly: bool | None = None
 
     class Config:
         from_attributes = True
@@ -39,3 +41,13 @@ class PaginatedTelemetry(BaseModel):
     page_size: int
     total_pages: int
     data: list[TelemetryResponse]
+
+
+class HealthScoreResponse(BaseModel):
+    vehicle_id: int
+    vehicle_code: str
+    health_score: float
+    total_records: int
+    anomaly_count: int
+    anomaly_rate: float
+    avg_anomaly_score: float | None
