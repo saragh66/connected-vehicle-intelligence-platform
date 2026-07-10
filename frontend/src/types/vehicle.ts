@@ -23,6 +23,8 @@ export interface TelemetryRecord {
   ambient_air_temp: number | null;
   accelerator_pedal_d: number | null;
   accelerator_pedal_e: number | null;
+  anomaly_score?: number | null;
+  is_anomaly?: boolean | null;
 }
 
 export interface PaginatedTelemetry {
@@ -43,4 +45,14 @@ export interface TelemetryStats {
   max_rpm: number | null;
   avg_coolant_temp: number | null;
   max_coolant_temp: number | null;
+}
+
+export interface HealthScore {
+  vehicle_id: number;
+  vehicle_code: string;
+  health_score: number;
+  total_records: number;
+  anomaly_count: number;
+  anomaly_rate: number;
+  avg_anomaly_score: number | null;
 }

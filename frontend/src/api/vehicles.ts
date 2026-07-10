@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { Vehicle, VehicleDetail, PaginatedTelemetry, TelemetryStats } from "../types/vehicle";
+import type { Vehicle, VehicleDetail, PaginatedTelemetry, TelemetryStats, HealthScore } from "../types/vehicle";
 
 export async function getVehicles(): Promise<Vehicle[]> {
   const response = await apiClient.get<Vehicle[]>("/vehicles/");
@@ -25,5 +25,10 @@ export async function getVehicleTelemetry(
 
 export async function getVehicleStats(vehicleId: number): Promise<TelemetryStats> {
   const response = await apiClient.get<TelemetryStats>(`/vehicles/${vehicleId}/stats`);
+  return response.data;
+}
+
+export async function getVehicleHealthScore(vehicleId: number): Promise<HealthScore> {
+  const response = await apiClient.get<HealthScore>(`/vehicles/${vehicleId}/health-score`);
   return response.data;
 }
