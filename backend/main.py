@@ -6,7 +6,7 @@ import logging
 
 from backend.config.settings import get_settings
 from backend.config.logging import configure_logging
-from backend.api.routes import vehicles, telemetry
+from backend.api.routes import vehicles, telemetry, ai
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -61,6 +61,7 @@ def create_app() -> FastAPI:
 
     app.include_router(vehicles.router, prefix=settings.API_PREFIX)
     app.include_router(telemetry.router, prefix=settings.API_PREFIX)
+    app.include_router(ai.router, prefix=settings.API_PREFIX)
 
     return app
 
