@@ -32,7 +32,9 @@ def ask_ai(payload: AIQuestionRequest, db: Session = Depends(get_db)):
             "anomaly_rate": health["anomaly_rate"] if health else None,
         }
 
-    result = ask_diagnostic_question(payload.question, vehicle_data)
+    history = [{"role": m.role, "content": m.content} for m in payload.conversation_history]
+
+    result = ask_diagnostic_question(payload.question, vehicle_data, history)
 
     return {
         "question": result["question"],
