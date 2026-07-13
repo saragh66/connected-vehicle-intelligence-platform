@@ -56,3 +56,14 @@ export interface HealthScore {
   anomaly_rate: number;
   avg_anomaly_score: number | null;
 }
+export interface AIAnswer {
+  question: string;
+  answer: string;
+  sources: string[];
+  vehicle_id: number | null;
+  vehicle_code: string | null;
+}
+export interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+}
