@@ -1,9 +1,15 @@
 from pydantic import BaseModel
 
 
+class ConversationMessage(BaseModel):
+    role: str
+    content: str
+
+
 class AIQuestionRequest(BaseModel):
     question: str
     vehicle_id: int | None = None
+    conversation_history: list[ConversationMessage] = []
 
 
 class AIAnswerResponse(BaseModel):
