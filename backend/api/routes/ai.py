@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
+from fastapi.responses import StreamingResponse
+from backend.rag.pipeline import stream_diagnostic_answer
 from backend.database.connection import get_db
 from backend.database.repositories.vehicle_repository import VehicleRepository
 from backend.database.repositories.telemetry_repository import TelemetryRepository
@@ -43,3 +44,26 @@ def ask_ai(payload: AIQuestionRequest, db: Session = Depends(get_db)):
         "vehicle_id": payload.vehicle_id,
         "vehicle_code": vehicle_code,
     }
+
+
+@router.post("/ask/stream")
+def ask_ai_stream(payload: AIQuestionRequest, db: Session = Depends(get_db)):
+    vehicle_data = None
+    if payload.vehicle_id is not None:
+        vehicle_repo = VehicleRepository(db)
+        vehicle = vehicle_repo.get_by_id(payload.vehicle_id)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found")
+        telemetry_repo = TelemetryRepository(db)
+        health = telemetry_repo.get_health_score(payload.vehicle_id)
+        vehicle_data = {
+            "vehicle_code": vehicle.vehicle_code,
+            "health_score": health["health_score"] if health else None,
+            "anomaly_count": health["anomaly_count"] if health else None,
+            "anomaly_rate": health["anomaly_rate"] if health else None,
+        }
+    history = [{"role": m.role, "content": m.content} for m in payload.conversation_history]
+    return StreamingResponse(
+        stream_diagnostic_answer(payload.question, vehicle_data, history),
+        media_type="text/plain",
+    )
