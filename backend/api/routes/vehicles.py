@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from backend.database.connection import get_db
 from backend.database.repositories.vehicle_repository import VehicleRepository
 from backend.database.repositories.telemetry_repository import TelemetryRepository
-from backend.api.schemas.vehicle import VehicleResponse, VehicleCreate, VehicleDetail
+from backend.api.schemas.vehicle import VehicleResponse, VehicleCreate, VehicleDetail, VehicleWithHealth
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
 
@@ -13,6 +13,12 @@ router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
 def list_vehicles(db: Session = Depends(get_db)):
     repo = VehicleRepository(db)
     return repo.get_all()
+
+
+@router.get("/with-health", response_model=list[VehicleWithHealth])
+def list_vehicles_with_health(db: Session = Depends(get_db)):
+    repo = VehicleRepository(db)
+    return repo.get_all_with_health()
 
 
 @router.get("/{vehicle_id}", response_model=VehicleDetail)
