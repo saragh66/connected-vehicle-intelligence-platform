@@ -19,3 +19,13 @@ class VehicleCreate(BaseModel):
 
 class VehicleDetail(VehicleResponse):
     total_records: int
+
+
+class VehicleWithHealth(BaseModel):
+    id: int
+    vehicle_code: str
+    model: str | None
+    total_records: int
+    anomaly_count: int
+    anomaly_rate: float
+    health_score: float
