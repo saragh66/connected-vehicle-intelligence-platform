@@ -32,3 +32,17 @@ export async function getVehicleHealthScore(vehicleId: number): Promise<HealthSc
   const response = await apiClient.get<HealthScore>(`/vehicles/${vehicleId}/health-score`);
   return response.data;
 }
+export interface VehicleWithHealth {
+  id: number;
+  vehicle_code: string;
+  model: string | null;
+  total_records: number;
+  anomaly_count: number;
+  anomaly_rate: number;
+  health_score: number;
+}
+
+export async function getVehiclesWithHealth(): Promise<VehicleWithHealth[]> {
+  const response = await apiClient.get<VehicleWithHealth[]>("/vehicles/with-health");
+  return response.data;
+}
