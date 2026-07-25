@@ -1,9 +1,11 @@
+import AIAssistant from "../components/AIAssistant";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from "recharts";
 import { getVehicleDetail, getVehicleStats, getVehicleTelemetry, getVehicleHealthScore } from "../api/vehicles";
 import type { VehicleDetail as VehicleDetailType, TelemetryStats, TelemetryRecord, HealthScore } from "../types/vehicle";
 import Gauge from "../components/Gauge";
+
 
 export default function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -137,6 +139,7 @@ export default function VehicleDetail() {
             </div>
           </section>
         )}
+        <AIAssistant vehicleId={vehicleId} />
 
         {/* ── Live Gauges ── */}
         <section style={{
