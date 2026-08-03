@@ -29,3 +29,20 @@ class VehicleWithHealth(BaseModel):
     anomaly_count: int
     anomaly_rate: float
     health_score: float
+
+
+class AnomalyCause(BaseModel):
+    timestamp: datetime
+    sensor: str
+    sensor_label: str
+    value: float | None
+    deviation: float   
+class FleetAnomalyType(BaseModel):
+    sensor_label: str
+    count: int
+class HealthTrendPoint(BaseModel):
+    date: str
+    total_records: int
+    anomaly_count: int
+    anomaly_rate: float
+    health_score: float
