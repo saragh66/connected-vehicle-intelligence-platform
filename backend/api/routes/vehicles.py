@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from backend.database.connection import get_db
 from backend.database.repositories.vehicle_repository import VehicleRepository
 from backend.database.repositories.telemetry_repository import TelemetryRepository
-from backend.api.schemas.vehicle import VehicleResponse, VehicleCreate, VehicleDetail, VehicleWithHealth
-
+from backend.api.schemas.vehicle import VehicleResponse, VehicleCreate, VehicleDetail, VehicleWithHealth, AnomalyCause
+from backend.api.schemas.vehicle import FleetAnomalyType
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
 
 
@@ -40,7 +40,35 @@ def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
     }
 
 
+@router.get("/{vehicle_id}/anomaly-causes", response_model=list[AnomalyCause])
+def get_anomaly_causes(vehicle_id: int, db: Session = Depends(get_db)):
+    vehicle_repo = VehicleRepository(db)
+    vehicle = vehicle_repo.get_by_id(vehicle_id)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+
+    telemetry_repo = TelemetryRepository(db)
+    return telemetry_repo.get_top_anomaly_causes(vehicle_id)
+
+
 @router.post("/", response_model=VehicleResponse, status_code=201)
 def create_vehicle(payload: VehicleCreate, db: Session = Depends(get_db)):
     repo = VehicleRepository(db)
     return repo.create(vehicle_code=payload.vehicle_code, model=payload.model)
+
+
+@router.get("/fleet/anomaly-types", response_model=list[FleetAnomalyType])
+def get_fleet_anomaly_types(db: Session = Depends(get_db)):
+    telemetry_repo = TelemetryRepository(db)
+    counts = telemetry_repo.get_fleet_top_anomaly_types()
+    return [{"sensor_label": k, "count": v} for k, v in sorted(counts.items(), key=lambda x: -x[1])]
+from backend.api.schemas.vehicle import HealthTrendPoint
+
+@router.get("/{vehicle_id}/health-trend", response_model=list[HealthTrendPoint])
+def get_health_trend(vehicle_id: int, db: Session = Depends(get_db)):
+    vehicle_repo = VehicleRepository(db)
+    vehicle = vehicle_repo.get_by_id(vehicle_id)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    telemetry_repo = TelemetryRepository(db)
+    return telemetry_repo.get_health_trend(vehicle_id)
