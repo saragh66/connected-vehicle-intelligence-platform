@@ -46,3 +46,44 @@ export async function getVehiclesWithHealth(): Promise<VehicleWithHealth[]> {
   const response = await apiClient.get<VehicleWithHealth[]>("/vehicles/with-health");
   return response.data;
 }
+export interface AnomalyCause {
+  timestamp: string;
+  sensor: string;
+  sensor_label: string;
+  value: number | null;
+  deviation: number;
+}
+
+export async function getAnomalyCauses(vehicleId: number): Promise<AnomalyCause[]> {
+  const response = await apiClient.get<AnomalyCause[]>(`/vehicles/${vehicleId}/anomaly-causes`);
+  return response.data;
+}
+export interface AnomalyCause {
+  timestamp: string;
+  sensor: string;
+  sensor_label: string;
+  value: number | null;
+  deviation: number;
+}
+
+export interface FleetAnomalyType {
+  sensor_label: string;
+  count: number;
+}
+
+export async function getFleetAnomalyTypes(): Promise<FleetAnomalyType[]> {
+  const response = await apiClient.get<FleetAnomalyType[]>("/vehicles/fleet/anomaly-types");
+  return response.data;
+}
+export interface HealthTrendPoint {
+  date: string;
+  total_records: number;
+  anomaly_count: number;
+  anomaly_rate: number;
+  health_score: number;
+}
+
+export async function getHealthTrend(vehicleId: number): Promise<HealthTrendPoint[]> {
+  const response = await apiClient.get<HealthTrendPoint[]>(`/vehicles/${vehicleId}/health-trend`);
+  return response.data;
+}
