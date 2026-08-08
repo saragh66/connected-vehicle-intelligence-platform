@@ -8,10 +8,26 @@ export interface VehicleWithHealth extends Vehicle {
   anomalyRate: number | null;
 }
 
+const SETTINGS_KEY = "vehiq_settings";
+const DEFAULT_THRESHOLD = 50;
+
+export function getCriticalThreshold(): number {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (!saved) return DEFAULT_THRESHOLD;
+    const parsed = JSON.parse(saved);
+    const value = Number(parsed.alertThreshold);
+    return Number.isFinite(value) ? value : DEFAULT_THRESHOLD;
+  } catch {
+    return DEFAULT_THRESHOLD;
+  }
+}
+
 export function getBand(score: number): "excellent" | "good" | "fair" | "critical" {
+  const threshold = getCriticalThreshold();
   if (score >= 90) return "excellent";
   if (score >= 75) return "good";
-  if (score >= 50) return "fair";
+  if (score >= threshold) return "fair";
   return "critical";
 }
 
