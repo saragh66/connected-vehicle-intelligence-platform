@@ -1,9 +1,10 @@
-import AIAssistant from "../components/AIAssistant";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from "recharts";
-import { getVehicleDetail, getVehicleStats, getVehicleTelemetry, getVehicleHealthScore } from "../api/vehicles";
+import { AlertCircle, ArrowRight } from "lucide-react";
+import { getVehicleDetail, getVehicleStats, getVehicleTelemetry, getVehicleHealthScore, getAnomalyCauses, getHealthTrend, type HealthTrendPoint } from "../api/vehicles";
 import type { VehicleDetail as VehicleDetailType, TelemetryStats, TelemetryRecord, HealthScore } from "../types/vehicle";
+import type { AnomalyCause } from "../api/vehicles";
 import Gauge from "../components/Gauge";
 
 
@@ -15,6 +16,8 @@ export default function VehicleDetail() {
   const [stats, setStats] = useState<TelemetryStats | null>(null);
   const [telemetry, setTelemetry] = useState<TelemetryRecord[]>([]);
   const [health, setHealth] = useState<HealthScore | null>(null);
+  const [causes, setCauses] = useState<AnomalyCause[]>([]);
+  const [trend, setTrend] = useState<HealthTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,12 +26,16 @@ export default function VehicleDetail() {
       getVehicleStats(vehicleId),
       getVehicleTelemetry(vehicleId, 3, 300),
       getVehicleHealthScore(vehicleId),
+      getAnomalyCauses(vehicleId).catch(() => []),
+      getHealthTrend(vehicleId).catch(() => []),
     ])
-      .then(([v, s, t, h]) => {
+      .then(([v, s, t, h, c, tr]) => {
         setVehicle(v);
         setStats(s);
         setTelemetry(t.data);
         setHealth(h);
+        setCauses(c);
+        setTrend(tr);
         setLoading(false);
       })
       .catch((err) => {
@@ -88,7 +95,7 @@ export default function VehicleDetail() {
               {vehicle.vehicle_code}
             </h1>
             <p style={{ color: "#8a8f9c", fontSize: 13.5, marginTop: 6, fontWeight: 500 }}>
-              {vehicle.model ?? "Unknown model"} · {vehicle.total_records.toLocaleString()} data points recorded
+              {vehicle.total_records.toLocaleString()} data points recorded
             </p>
           </div>
           {health && (
@@ -103,12 +110,12 @@ export default function VehicleDetail() {
           )}
         </header>
 
-        {/* ── AI Health Score Panel ── */}
+        {/* ── Health Score Panel ── */}
         {health && (
           <section style={{
             background: "linear-gradient(135deg, #ffffff 0%, #fbfcfe 100%)",
             border: "1px solid #e8eaef", borderRadius: 20, padding: "30px 34px",
-            marginBottom: 26, boxShadow: "0 4px 24px rgba(15, 17, 23, 0.05)",
+            marginBottom: 20, boxShadow: "0 4px 24px rgba(15, 17, 23, 0.05)",
             display: "flex", alignItems: "center", gap: 40, flexWrap: "wrap",
           }}>
             <HealthRing score={health.health_score} color={healthColor} />
@@ -131,15 +138,94 @@ export default function VehicleDetail() {
               display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2,
             }}>
               <span style={{ fontSize: 9.5, color: "#9ca3af", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.8 }}>
-                ML Model
+                Diagnostic Engine
               </span>
               <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-mono)" }}>
-                Isolation Forest v1
+                Predictive Health 
               </span>
             </div>
           </section>
         )}
-        <AIAssistant vehicleId={vehicleId} />
+
+        {/* ── Top Contributing Factors — real anomaly root-cause attribution ── */}
+        {causes.length > 0 && (
+          <section style={{
+            background: "#fff", border: "1px solid #e8eaef", borderRadius: 20, padding: "24px 28px",
+            marginBottom: 20, boxShadow: "0 2px 12px rgba(15, 17, 23, 0.04)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#0f1117" }}>Top contributing factors</div>
+                <div style={{ fontSize: 12.5, color: "#9ca3af", marginTop: 2 }}>
+                  Sensor deviation for the most anomalous readings on this vehicle
+                </div>
+              </div>
+              <Link to="/assistant" style={{
+                fontSize: 12.5, fontWeight: 700, color: "#0052ff", textDecoration: "none",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+                Ask the AI Assistant <ArrowRight size={13} />
+              </Link>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {causes.map((c, i) => (
+                <div key={i} style={{
+                  display: "grid", gridTemplateColumns: "24px 1fr 90px 100px", gap: 12, alignItems: "center",
+                  padding: "10px 12px", background: "#fafbfc", borderRadius: 10,
+                }}>
+                  <AlertCircle size={16} color="#dc2626" />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#0f1117" }}>{c.sensor_label}</div>
+                    <div style={{ fontSize: 11.5, color: "#9ca3af" }}>
+                      {new Date(c.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "#374151", textAlign: "right" }}>
+                    {c.value !== null ? c.value.toFixed(1) : "—"}
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <span style={{
+                      fontSize: 11.5, fontWeight: 700, color: "#dc2626",
+                      background: "#fef2f2", padding: "3px 9px", borderRadius: 20,
+                    }}>
+                      {c.deviation.toFixed(1)}σ deviation
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Health Trend — daily anomaly rate computed live from raw telemetry ── */}
+        {trend.length > 1 && (
+          <section style={{
+            background: "#fff", border: "1px solid #e8eaef", borderRadius: 20, padding: "24px 28px",
+            marginBottom: 20, boxShadow: "0 2px 12px rgba(15, 17, 23, 0.04)",
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#0f1117", marginBottom: 2 }}>Health trend</div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af", marginBottom: 16 }}>
+              Daily anomaly rate over {trend.length} recorded days — computed live from raw telemetry, not a stored snapshot
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={trend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f2f4" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={{ stroke: "#e8eaef" }} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "#fff", border: "1px solid #e8eaef", borderRadius: 10, fontSize: 12 }}
+                  formatter={(value, name) => {
+                    const v = Number(value);
+                    const isHealth = name === "health_score";
+                    return [isHealth ? v.toFixed(0) : `${v}%`, isHealth ? "Health score" : "Anomaly rate"];
+                  }}
+                />
+                <Line type="monotone" dataKey="health_score" stroke="#059669" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </section>
+        )}
 
         {/* ── Live Gauges ── */}
         <section style={{
