@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Car, Database, Radio, AlertTriangle, ChevronRight } from "lucide-react";
 import { getVehicles, getVehicleHealthScore } from "../api/vehicles";
+import { getCriticalThreshold } from "../hooks/useFleetHealth";
 import type { Vehicle } from "../types/vehicle";
 import HealthBadge from "../components/HealthBadge";
 import Header from "../components/Header";
@@ -15,6 +16,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  const threshold = getCriticalThreshold();
 
   useEffect(() => {
     getVehicles()
@@ -50,7 +53,7 @@ export default function Dashboard() {
   const avgHealth = vehicles.length
     ? Math.round(vehicles.reduce((sum, v) => sum + (v.healthScore ?? 100), 0) / vehicles.length)
     : 0;
-  const criticalCount = vehicles.filter((v) => (v.healthScore ?? 100) < 50).length;
+  const criticalCount = vehicles.filter((v) => (v.healthScore ?? 100) < threshold).length;
 
   return (
     <div>
@@ -59,7 +62,7 @@ export default function Dashboard() {
         <header style={{ marginBottom: "2.5rem" }}>
           <h1 style={{ fontSize: 34, marginBottom: 8 }}>Fleet Intelligence Center</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 15 }}>
-            AI-powered anomaly detection across {vehicles.length} vehicles · Isolation Forest v1
+            Real-time health monitoring across {vehicles.length} vehicles
           </p>
         </header>
 
@@ -118,11 +121,11 @@ export default function Dashboard() {
                     {vehicle.vehicle_code}
                   </h3>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>AI Health Score</span>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Health Score</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700 }}>{health}%</span>
                   </div>
                   <div style={{ height: 5, background: "#f0f1f3", borderRadius: 3, overflow: "hidden", marginBottom: 10 }}>
-                    <div style={{ height: "100%", width: `${health}%`, background: health >= 80 ? "#00a877" : health >= 50 ? "#d97706" : "#dc2626", transition: "width 0.4s ease" }} />
+                    <div style={{ height: "100%", width: `${health}%`, background: health >= 80 ? "#00a877" : health >= threshold ? "#d97706" : "#dc2626", transition: "width 0.4s ease" }} />
                   </div>
                   <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2, color: "var(--accent-blue)", fontSize: 12, fontWeight: 600 }}>
                     View diagnostics <ChevronRight size={14} />
