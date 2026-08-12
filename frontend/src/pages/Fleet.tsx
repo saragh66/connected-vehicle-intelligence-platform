@@ -1,20 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Search, ChevronRight } from "lucide-react";
 import { useFleetHealth, getBand, BAND_COLOR } from "../hooks/useFleetHealth";
+import { getAnomalyCauses, type AnomalyCause } from "../api/vehicles";
 
 export default function Fleet() {
   const { vehicles, loading, error } = useFleetHealth();
   const [query, setQuery] = useState("");
   const [band, setBand] = useState("all");
+  const [causesById, setCausesById] = useState<Record<number, AnomalyCause[]>>({});
 
   const filtered = vehicles
     .filter((v) => query === "" || v.vehicle_code.toLowerCase().includes(query.toLowerCase()))
     .filter((v) => band === "all" || getBand(v.healthScore ?? 100) === band)
     .sort((a, b) => (a.healthScore ?? 100) - (b.healthScore ?? 100));
 
+  useEffect(() => {
+    // Only fetch causes for vehicles below "excellent" — no point querying
+    // anomaly attribution for vehicles running clean.
+    const flagged = vehicles.filter((v) => getBand(v.healthScore ?? 100) !== "excellent");
+    flagged.forEach((v) => {
+      if (causesById[v.id]) return;
+      getAnomalyCauses(v.id)
+        .then((causes) => setCausesById((prev) => ({ ...prev, [v.id]: causes.slice(0, 1) })))
+        .catch(() => setCausesById((prev) => ({ ...prev, [v.id]: [] })));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicles]);
+
   return (
-    <div style={{ padding: "28px 32px 48px", maxWidth: 1100 }}>
+    <div style={{ padding: "28px 32px 48px", maxWidth: 1200 }}>
       <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "#0f1117" }}>Fleet</h1>
       <p style={{ fontSize: 13, color: "#9ca3af", margin: "4px 0 20px" }}>
         {vehicles.length} vehicles · sorted by health score, lowest first
@@ -60,27 +75,55 @@ export default function Fleet() {
         </div>
       ) : (
         <div style={{ background: "#fff", border: "1px solid #e8eaef", borderRadius: 16, overflow: "hidden" }}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "18px 1fr 220px 60px 20px", gap: 14,
+            padding: "10px 20px", borderBottom: "1px solid #e8eaef",
+            fontSize: 10.5, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.4,
+          }}>
+            <div />
+            <div>Vehicle</div>
+            <div>Primary factor</div>
+            <div style={{ textAlign: "right" }}>Score</div>
+            <div />
+          </div>
+
           {filtered.map((v, i) => {
             const score = v.healthScore ?? 100;
             const b = getBand(score);
+            const topCause = causesById[v.id]?.[0];
+            const isExcellent = b === "excellent";
+
             return (
               <Link
                 key={v.id}
                 to={`/vehicles/${v.id}`}
                 style={{
-                  display: "flex", alignItems: "center", gap: 14, padding: "14px 20px",
+                  display: "grid", gridTemplateColumns: "18px 1fr 220px 60px 20px", gap: 14, alignItems: "center",
+                  padding: "14px 20px",
                   borderBottom: i === filtered.length - 1 ? "none" : "1px solid #e8eaef",
                   textDecoration: "none", color: "inherit",
                 }}
               >
                 <span style={{ width: 10, height: 10, borderRadius: "50%", background: BAND_COLOR[b], flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 600, fontFamily: "var(--font-mono)" }}>{v.vehicle_code}</div>
                   {v.anomalyCount !== null && (
                     <div style={{ fontSize: 11.5, color: "#9ca3af" }}>{v.anomalyCount} anomalies detected</div>
                   )}
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: BAND_COLOR[b], width: 40, textAlign: "right" }}>
+                <div style={{ fontSize: 12.5, color: "#4b5563", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {isExcellent ? (
+                    <span style={{ color: "#9ca3af" }}>—</span>
+                  ) : topCause ? (
+                    <>
+                      <span style={{ fontWeight: 600, color: "#0f1117" }}>{topCause.sensor_label}</span>
+                      <span style={{ color: "#9ca3af" }}> · {topCause.deviation.toFixed(1)}σ</span>
+                    </>
+                  ) : (
+                    <span style={{ color: "#c4c9d4" }}>Loading…</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: BAND_COLOR[b], textAlign: "right" }}>
                   {score.toFixed(0)}
                 </div>
                 <ChevronRight size={16} color="#c4c9d4" />
