@@ -1,25 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertTriangle, AlertCircle, Search, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useFleetHealth } from "../hooks/useFleetHealth";
+import { useFleetHealth, getCriticalThreshold } from "../hooks/useFleetHealth";
+import { getAnomalyCauses, type AnomalyCause } from "../api/vehicles";
 
 export default function Alerts() {
   const { vehicles, loading, error } = useFleetHealth();
   const [filter, setFilter] = useState<"all" | "critical" | "warning">("all");
   const [query, setQuery] = useState("");
+  const [causesById, setCausesById] = useState<Record<number, AnomalyCause[]>>({});
+
+  const threshold = getCriticalThreshold();
 
   const flagged = vehicles
     .filter((v) => (v.healthScore ?? 100) < 75)
     .sort((a, b) => (a.healthScore ?? 100) - (b.healthScore ?? 100));
 
-  const criticalCount = flagged.filter((v) => (v.healthScore ?? 100) < 50).length;
-  const warningCount = flagged.filter((v) => (v.healthScore ?? 100) >= 50 && (v.healthScore ?? 100) < 75).length;
+  useEffect(() => {
+    flagged.forEach((v) => {
+      if (causesById[v.id]) return;
+      getAnomalyCauses(v.id)
+        .then((causes) => setCausesById((prev) => ({ ...prev, [v.id]: causes.slice(0, 1) })))
+        .catch(() => setCausesById((prev) => ({ ...prev, [v.id]: [] })));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicles]);
+
+  const criticalCount = flagged.filter((v) => (v.healthScore ?? 100) < threshold).length;
+  const warningCount = flagged.filter((v) => (v.healthScore ?? 100) >= threshold && (v.healthScore ?? 100) < 75).length;
 
   const filtered = flagged
     .filter((v) => {
       const score = v.healthScore ?? 100;
-      if (filter === "critical") return score < 50;
-      if (filter === "warning") return score >= 50 && score < 75;
+      if (filter === "critical") return score < threshold;
+      if (filter === "warning") return score >= threshold && score < 75;
       return true;
     })
     .filter((v) => query.trim() === "" || v.vehicle_code.toLowerCase().includes(query.toLowerCase()));
@@ -31,7 +45,7 @@ export default function Alerts() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0f1117", margin: 0, letterSpacing: "-0.01em" }}>Alerts</h1>
         <p style={{ fontSize: 13, color: "#9ca3af", margin: "4px 0 0" }}>
-          {flagged.length} vehicles flagged · same scoring as Overview
+          {flagged.length} vehicles flagged · showing the primary contributing sensor for each
         </p>
       </div>
 
@@ -77,14 +91,20 @@ export default function Alerts() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "48px 0", color: "#9ca3af", background: "#fff", border: "1px dashed #e4e7eb", borderRadius: 14, fontSize: 13 }}>
+          <div style={{
+            textAlign: "center", padding: "48px 0", color: "#9ca3af",
+            background: "#fff", border: "1px dashed #e4e7eb", borderRadius: 14, fontSize: 13,
+          }}>
             No alerts match this filter.
           </div>
         )}
+
         {filtered.map((v) => {
           const score = v.healthScore ?? 100;
-          const critical = score < 50;
+          const critical = score < threshold;
           const color = critical ? "#dc2626" : "#d97706";
+          const topCause = causesById[v.id]?.[0];
+
           return (
             <Link
               key={v.id}
@@ -95,23 +115,36 @@ export default function Alerts() {
                 borderRadius: 12, padding: "14px 16px", textDecoration: "none",
               }}
             >
-              <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: critical ? "#fef2f2" : "#fffbeb", color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                background: critical ? "#fef2f2" : "#fffbeb", color,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
                 {critical ? <AlertTriangle size={16} /> : <AlertCircle size={16} />}
               </div>
+
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: "#0f1117" }}>
-                    {critical ? "Critical health score" : "Health score needs monitoring"}
+                    {topCause ? `Likely cause: ${topCause.sensor_label}` : "Analyzing contributing factors..."}
                   </span>
                   {critical && (
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#dc2626", display: "inline-block", animation: "pulse 1.6s infinite" }} />
+                    <span style={{
+                      width: 6, height: 6, borderRadius: "50%", background: "#dc2626",
+                      display: "inline-block", animation: "pulse 1.6s infinite",
+                    }} />
                   )}
                 </div>
-                {v.anomalyCount !== null && (
-                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{v.anomalyCount} anomalies detected</div>
-                )}
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, fontFamily: "var(--font-mono)" }}>{v.vehicle_code}</div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                  {topCause
+                    ? `${topCause.deviation.toFixed(1)}σ deviation from this vehicle's baseline, at ${new Date(topCause.timestamp).toLocaleString()}`
+                    : `${v.anomalyCount ?? 0} anomalies detected`}
+                </div>
+                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, fontFamily: "var(--font-mono)" }}>
+                  {v.vehicle_code}
+                </div>
               </div>
+
               <div style={{ fontSize: 15, fontWeight: 700, color }}>{score.toFixed(0)}</div>
               <ChevronRight size={16} color="#c4c9d4" />
             </Link>
