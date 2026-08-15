@@ -1,11 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, Loader2, Bot, User } from "lucide-react";
 import { askAI } from "../api/ai";
-import type { ConversationMessage } from "../types/vehicle";
-
-interface ChatMessage extends ConversationMessage {
-  sources?: string[];
-}
+import { useChat } from "../context/ChatContext";
 
 const QUICK_PROMPTS = [
   "What causes engine overheating?",
@@ -17,7 +13,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function AssistantPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { messages, setMessages, clearChat } = useChat();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -30,9 +26,8 @@ export default function AssistantPage() {
     const question = (text ?? input).trim();
     if (!question || loading) return;
 
-    const userMsg: ChatMessage = { role: "user", content: question };
+    const userMsg = { role: "user" as const, content: question };
     const history = messages.map(({ role, content }) => ({ role, content }));
-
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
@@ -56,22 +51,31 @@ export default function AssistantPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <div style={{ padding: "20px 32px", borderBottom: "1px solid #e8eaef", background: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: "linear-gradient(135deg, #0052ff, #7c3aed)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Sparkles size={17} color="#fff" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "#0f1117" }}>AI Diagnostic Assistant</h1>
-            <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
-              RAG pipeline · Llama 3.2 (local) · ChromaDB · Live fleet data
-            </p>
-          </div>
+      <div style={{ padding: "20px 32px", borderBottom: "1px solid #e8eaef", background: "#fff", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: 10,
+          background: "linear-gradient(135deg, #0052ff, #7c3aed)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <Sparkles size={17} color="#fff" />
         </div>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "#0f1117" }}>AI Diagnostic Assistant</h1>
+          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
+            Ask about diagnostics, health scores, and vehicle telemetry
+          </p>
+        </div>
+        {messages.length > 0 && (
+          <button
+            onClick={clearChat}
+            style={{
+              fontSize: 12, fontWeight: 600, color: "#6b7280", background: "none",
+              border: "1px solid #e4e7eb", borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+            }}
+          >
+            Clear conversation
+          </button>
+        )}
       </div>
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 32px", background: "#f7f8fa" }}>
