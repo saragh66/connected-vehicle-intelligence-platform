@@ -1,13 +1,18 @@
+import { getCriticalThreshold } from "../hooks/useFleetHealth";
+
 interface HealthBadgeProps {
   score: number;
 }
 
 export default function HealthBadge({ score }: HealthBadgeProps) {
+  const threshold = getCriticalThreshold();
+
   const getStatus = () => {
     if (score >= 80) return { color: "#059669", bg: "#ecfdf5", label: "OPTIMAL" };
-    if (score >= 50) return { color: "#d97706", bg: "#fffbeb", label: "MONITOR" };
+    if (score >= threshold) return { color: "#d97706", bg: "#fffbeb", label: "MONITOR" };
     return { color: "#dc2626", bg: "#fef2f2", label: "CRITICAL" };
   };
+
   const { color, bg, label } = getStatus();
 
   return (
