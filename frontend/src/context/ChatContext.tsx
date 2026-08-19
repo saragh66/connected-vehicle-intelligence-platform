@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { ConversationMessage } from "../types/vehicle";
 
@@ -9,14 +9,37 @@ export interface ChatMessage extends ConversationMessage {
 interface ChatContextValue {
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  clearChat: () => void;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
+const STORAGE_KEY = "vehiq_chat_history";
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // ignore storage errors
+    }
+  }, [messages]);
+
+  const clearChat = () => {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   return (
-    <ChatContext.Provider value={{ messages, setMessages }}>
+    <ChatContext.Provider value={{ messages, setMessages, clearChat }}>
       {children}
     </ChatContext.Provider>
   );
