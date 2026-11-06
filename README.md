@@ -138,14 +138,16 @@ These measurements provide a foundation for time-series exploration, vehicle beh
 
 ### Additional public datasets for future extensions
 
-The following resources are relevant to possible extensions. They are **not represented as integrated into the current pipeline**.
+These resources can broaden the experiments beyond the KIT recordings. They are **reference datasets only**; they are not currently part of the repository's ingestion pipeline.
 
 | Dataset | What it provides | Potential use |
 |---|---|---|
-| [LEVIN Open Data](https://github.com/YunSolutions/levin-openData) | Real-world OBD data collected from approximately 30 vehicles, alongside accelerometer and GPS-related signals. | Broader vehicle coverage and multi-sensor analysis. |
-| [In-vehicle Sensing Datasets – Florida Atlantic University](https://zenodo.org/records/10044775) | GPS, IMU, and OBD recordings across 497 trajectories and more than 2,400 km. | Sensor fusion, trajectory analysis, and driving-context features. |
-| [UDOT & Panasonic Connected Vehicle BSM Data](https://catalog.data.gov/dataset/bsm-from-udot-and-panasonic-connected-vehicle-data-ecosystem-program) | Basic Safety Messages from a connected-vehicle deployment in Utah. | Future V2X and connected-infrastructure experiments. |
-| [MetroPT Predictive Maintenance Dataset](https://zenodo.org/records/6854240) | Large-scale pressure, temperature, current, control-signal, and GPS data from an urban metro system. | Transfer experiments for time-series anomaly detection and predictive maintenance; note that it is rail-system data, not passenger-car OBD data. |
+| [LEVIN Vehicle Telematics Data](https://github.com/YunSolutions/levin-openData) | OBD telemetry from approximately 30 vehicles over four months, with OBD sampled at 1 Hz and accelerometer data at 25 Hz. | Cross-vehicle experiments, driving-behavior analysis, and sensor fusion. Check its **CC BY-NC-SA** license before reuse. |
+| [In-vehicle Sensing Datasets (Florida Atlantic University)](https://zenodo.org/records/10044775) | 497 trajectory datasets covering 2,404 km, with GPS, six-degree-of-freedom IMU, and OBD signals. | Multi-sensor fusion, driving context, and trajectory-aware analysis. |
+| [Automotive Sensor Data – AEGIS](https://zenodo.org/records/820576) | OBD/CAN-oriented vehicle measurements with GPS, gyroscope, and acceleration data from 35 trips. | Exploring additional sensor modalities and trip-level behavior. |
+
+**Dataset selection note:** These datasets differ in vehicle type, sampling frequency, signal definitions, and licensing. They should be profiled and harmonized before combining them with the KIT dataset.
+
 
 ## Core Capabilities
 
